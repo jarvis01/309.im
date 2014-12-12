@@ -42,7 +42,7 @@ class UserController extends iController
 			$this->data = $this->userModel->message;
 		}else{
 			$this->data = L('login_success');
-			$this->userModel->log_userinfo(array('user_id'=>$res));
+			$this->userModel->log_userinfo(array('user_id'=>$res['id'], 'avatar'=>$res['avatar']));
 		}
 
 		$this->play();
@@ -67,6 +67,15 @@ class UserController extends iController
 	}
 
 	/**
+	 * @desc 显示用户注册页
+	 * @version 1 2014-12-12 RGray
+	*/
+	public function show_resgister()
+	{
+		$this->play();
+	}
+
+	/**
 	 * @desc 用户注册
 	 * @version 1 2014-12-03 RGray
 	*/
@@ -79,7 +88,6 @@ class UserController extends iController
 			$this->data = $this->userModel->getError();
 		}else{
 			$this->data = L('register_success');
-			$this->userModel->log_userinfo(array('user_id'=>$res));
 		}
 
 		$this->play();
@@ -128,8 +136,28 @@ class UserController extends iController
 			$this->data = $this->userModel->getError();
 		}else{
 			$this->data = L('avatar_upload_success');
+			$this->userModel->fresh_userinfo();
 		}
 
 		$this->play();
+	}
+
+	/**
+	 * @desc 裁剪用户头像
+	 * @version 1 2014-12-12 RGray
+	*/
+	public function fix_avatar()
+	{
+		$res = $this->userModel->cutdown_avatar();
+
+		if(!$res){
+			$this->type = ERROR;
+			$this->data = $this->userModel->getError();
+		}else{
+			$this->data = L('avatar_cutdown_success');
+			$this->userModel->fresh_userinfo();
+		}
+
+		$this->play();		
 	}
 }

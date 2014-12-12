@@ -56,29 +56,65 @@ class ArticleModel extends Model {
      * @desc 获取文章列表
      * @param int $id 文章ID
      * @return array
-     * @version 1 2014-11-11 RGray
+     * @version 2 2014-12-10 RGray
      */
     public function get_list()
     {
+        $page = I('param.page', 1, 'intval');
+        $uid = I('param.uid');
+        $sdate = I('param.start_date');
+        $edate = I('param.end_date');
+        $type = I('param.type');
+
+        //分页
+        $limit = PAGESIZE12;
+        $offset = ($page - 1) * $limit;
+        $this->limit($offset, $limit);
+
+        // //条件过滤
+        $where['status'] = NORMAL;
+
+        if(!empty($uid)){
+            $where['user_id'] = $uid;
+        }
+
+        if(!empty($type)){
+             $where['type'] = strtoupper($type);
+        }
+
+        if(!empty($sdate)){
+            $where['create_time'] = array('EGT', strtotime($sdate));
+        }
+
+        if(!empty($edate)){
+            $where['create_time'] = array('ELT', strtotime($edate));
+        }
+
+        //查询
         return $this->alias('a')
                     ->field('a.*, u.real_name, u.avatar')
                     ->join('LEFT JOIN user AS u ON u.id = a.user_id')
-                    ->where(array('status'=>NORMAL))->select();
+                    ->where($where)->select();
     }
 
     /**
      * @desc 获取文章的详细内容
      * @param int $id 文章ID
      * @return array
-     * @version 1 2014-11-11 RGray
+     * @version 2 2014-12-11 RGray
      */
     public function get_detail($id)
     {
     	$info = $this->alias('a')
-                     ->field('a.*, u.real_name, u.avatar, u.honor, u.tag, u.sign, u.description')
+                     ->field('a.*, u.real_name, u.avatar, u.honor, u.tag as utag, u.sign, u.description as user_desc')
                      ->join('LEFT JOIN user AS u ON u.id = a.user_id')
                      ->where(array('a.id'=>$id))->find();
 
+        //拆开标签                     
+        $tag = explode(',', $info['tag']);unset($info['tag']);$info['art_tag'] = $tag;
+        $utag = explode(',', $info['utag']);unset($info['utag']);$info['user_tag'] = $utag;                     
+
+        //查找对应媒体
         $mfield = 'id,description,link,type,status,limit,width,height,size';
     	$media = $this->mediaModel->where(array('art_id'=>$id))->field($mfield)->select();
 
@@ -88,26 +124,6 @@ class ArticleModel extends Model {
     			case TEXT:
     				$info['content'] = $m['description'];
     				break;
-
-    			case IMAGE:
-    				$info['image'][] = $m;
-    				break;
-
-    			case MUSIC:
-    				$info['music'][] = $m;
-    				break;
-
-    			case VIDEO:
-    				$info['video'][] = $m;
-    				break;
-
-    			case ANNEX:
-    				$info['annex'][] = $m;
-    				break;
-
-    			case CODE:
-    				$info['code'][] = $m;	
-    			    break;
 
     			default:
     				$info['media'][] = $m;
@@ -152,6 +168,30 @@ class ArticleModel extends Model {
         }
 
         return $art_id;
+    }
+
+    /**
+     * @desc 更新文章封面
+     * @version 1 2014-12-8 RGray
+     */
+    public function update_cover($item)
+    {
+        if(!in_array($item->type, array(TEXT, IMAGE, CODE, MUSIC, VIDEO))){
+            return false;
+        }
+
+        $type = strtolower($item->type);
+        $cover = $this->where(array('id'=>$item->art_id))->getField($type);
+
+        if(!empty($cover)){
+            return false;
+        }
+
+        $data = NULL;
+        $data[$type] = $item->link;
+        $data['media_width'] = $item->width;
+        $data['media_height'] = $item->height;
+        $this->where(array('id'=>$item->art_id))->save($data);
     }
 
 

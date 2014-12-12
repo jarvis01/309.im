@@ -13,9 +13,11 @@ return array(
 		'login'			=>	'User/login',
 		'name-check'	=>	'User/check_username_unique',
 		'register'		=>	'User/register',
+		'reg'			=>	'User/show_register',
 		'uinfo-view'	=>	'User/view_userinfo',
 		'uinfo-edit'	=>	'User/edit_userinfo',
 		'avatar-up'		=>	'User/add_avatar',
+		'avatar-fix'	=>	'User/fix_avatar',
 		'img-resize'	=>	'Image/resize_image',
 	),
 
